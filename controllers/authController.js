@@ -6,7 +6,6 @@ const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 };
 
-// Register User
 const registerUser = async (req, res) => {
     const { firstName, lastName, email, password } = req.body;
 
@@ -28,7 +27,6 @@ const registerUser = async (req, res) => {
     }
 };
 
-// Login User
 const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
@@ -41,7 +39,7 @@ const loginUser = async (req, res) => {
             res.json({ 
                 message: 'Login successful',
                 token,
-                user: { firstName: user.firstName, lastName: user.lastName, email: user.email }
+                user: { firstName: user.firstName, lastName: user.lastName, email: user.email, userId: user._id }
             });
         } else {
             res.status(401).json({ message: 'Invalid credentials' });
@@ -51,7 +49,6 @@ const loginUser = async (req, res) => {
     }
 };
 
-// Logout User
 const logoutUser = (req, res) => {
     res.cookie('token', '', { httpOnly: true, expires: new Date(0) });
     res.json({ message: 'Logged out' });
