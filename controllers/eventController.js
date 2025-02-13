@@ -1,4 +1,5 @@
 const Event = require("../models/Event");
+const mongoose = require('mongoose');
 
 const createEvent = async (req, res) => {
     try {
@@ -92,10 +93,108 @@ const deleteEvent = async (req, res) => {
         res.status(500).json({ message: "Server error", error });
     }
 };
+
+
+const sendInvitation = async (req, res) => {
+    const { userIds } = req.body; 
+    const eventId = req.params.eventId;
+    try {
+        const event = await Event.findById(new mongoose.Types.ObjectId(eventId));
+        if (!event) {
+            return res.status(404).json({ message: "Event not found" });
+        }
+
+        if (event.user.toString() !== req.user.id) {
+            return res.status(403).json({ message: "Unauthorized access" });
+        }
+
+        if (!event.invitedBy.includes(req.user.id)) {
+            event.invitedBy.push(req.user.id);
+        }
+
+        userIds.forEach(userId => {
+            if (!event.invitations.some(invite => invite.userId.toString() === userId)) {
+                event.invitations.push({ userId, status: "pending" });
+            }
+        });
+
+        await event.save();
+        res.status(200).json({ success: true, message: "Invitations sent successfully", event });
+
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+const getSentInvites = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const events = await Event.find({ invitedBy: userId })
+            .populate('invitations.userId', 'firstName lastName'); 
+
+        if (events.length === 0) {
+            return res.status(404).json({ message: "No events where you have sent invites" });
+        }
+
+        res.status(200).json({ success: true, events });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
+
+const getInvitedEvents = async (req, res) => {
+    try {
+        const userId = req.params.userId;  
+
+        const events = await Event.find({
+            "invitations.userId": userId,
+        });
+
+        if (events.length === 0) {
+            return res.status(404).json({ message: "No events found for this user" });
+        }
+
+        res.status(200).json({ success: true, events });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
+
+const handleRSVP = async (req, res) => {
+    const { eventId, invitationId } = req.params;
+    const { status } = req.body; 
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ message: "Event not found" });
+        }
+
+        const invitation = event.invitations.id(invitationId);
+        if (!invitation) {
+            return res.status(404).json({ message: "Invitation not found" });
+        }
+
+        invitation.status = status;
+        await event.save();
+        res.status(200).json({ success: true, message: `RSVP updated to ${status}`, event });
+
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+    }
+};
+
 module.exports = { 
     createEvent, 
     getEvents, 
     getEventById, 
     updateEvent, 
     deleteEvent, 
+    sendInvitation,
+    getInvitedEvents, 
+    getSentInvites,
+    handleRSVP 
 };

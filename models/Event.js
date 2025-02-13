@@ -8,6 +8,12 @@ const EventSchema = new mongoose.Schema({
     time: { type: String, required: true },
     location: { type: String, required: true },
     reminder: { type: Boolean, default: false },
+    invitations: [{
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        status: { type: String, enum: ['pending', 'accepted', 'declined'], default: 'pending' },
+        invitedAt: { type: Date, default: Date.now }
+    }],
+    invitedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
 }, { timestamps: true });
 
 module.exports = mongoose.model("Event", EventSchema);

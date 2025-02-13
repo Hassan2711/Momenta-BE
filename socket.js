@@ -12,7 +12,7 @@ function initSocketServer(server) {
     });
 
     io.on('connection', socket => {
-        console.log('User connected:', socket.id);
+
         socket.on('registerUser', (userId) => {
             if (userId) {
                 userSocketMap[userId] = socket.id; 
@@ -24,7 +24,7 @@ function initSocketServer(server) {
             for (let userId in userSocketMap) {
                 if (userSocketMap[userId] === socket.id) {
                     delete userSocketMap[userId];
-                    console.log(`User with ID: ${userId} disconnected`);
+
                     break;
                 }
             }
@@ -35,8 +35,6 @@ function initSocketServer(server) {
 function sendReminder(userSocketId, reminder) {
     if (userSocketId && io) {
         io.to(userSocketId).emit('eventReminder', reminder);
-    } else {
-        console.log("User socket ID is missing or WebSocket not initialized.");
     }
 }
 
